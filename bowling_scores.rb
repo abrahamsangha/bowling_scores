@@ -3,7 +3,7 @@
 
 class Formatter
   def self.format_rolls(total_pins_felled)
-  	total_pins_felled.map!(&:to_i)
+    total_pins_felled.map!(&:to_i)
     pins_felled = Formatter.nil_pad_strikes(total_pins_felled)
     pins_felled_by_frame = Formatter.divide_pins_felled_by_frame(pins_felled)
     Formatter.make_frames_array(pins_felled_by_frame)
@@ -29,37 +29,37 @@ class Formatter
   def self.make_frames_array(pins_felled_by_frame)
     frames_array = []
     pins_felled_by_frame.each_with_index do |frame, index|
-    	frame
-    	frames_array << Frame.new(index + 1, frame[0], frame[1])
+      frame
+      frames_array << Frame.new(index + 1, frame[0], frame[1])
     end
     frames_array
   end
 end
 
 class Frame
-	attr_reader :frame_number, :roll_1, :roll_2, :is_spare, :is_strike
-	def initialize(frame_number, roll_1, roll_2)
-		@frame_number = frame_number
-		@roll_1 = roll_1
-		@roll_2 = roll_2
-		@status = "no bonus"
-		self.set_status
-	end
+  attr_reader :frame_number, :roll_1, :roll_2, :is_spare, :is_strike
+  def initialize(frame_number, roll_1, roll_2)
+    @frame_number = frame_number
+    @roll_1 = roll_1
+    @roll_2 = roll_2
+    @status = "no bonus"
+    self.set_status
+  end
 
-	def set_status
-		unless @roll_2 == nil
-			@status = "spare" if @roll_1 + @roll_2 == 10
-		end
-		@status = "strike" if @roll_1 == 10
-	end
+  def set_status
+    unless @roll_2 == nil
+      @status = "spare" if @roll_1 + @roll_2 == 10
+    end
+    @status = "strike" if @roll_1 == 10
+  end
 
-	def is_spare
+  def is_spare
     @status == "spare"
-	end
+  end
 
-	def is_strike
-		@status == "strike"
-	end
+  def is_strike
+    @status == "strike"
+  end
 end
 
 class ScoresCalculator
@@ -70,17 +70,17 @@ class ScoresCalculator
   end
 
   def calculate_frame_score(frames_array)
-  	frames_array.each_with_index do |frame, index|
-  		next_frame = frames_array[index + 1]
-  		third_frame = frames_array[index + 2]
+    frames_array.each_with_index do |frame, index|
+      next_frame = frames_array[index + 1]
+      third_frame = frames_array[index + 2]
       if next_frame == nil
         bonus_rolls = [0,0]
       elsif third_frame == nil
-  			bonus_rolls = [next_frame.roll_1, next_frame.roll_2]
-  		else
-			  bonus_rolls = [next_frame.roll_1, next_frame.roll_2, third_frame.roll_1].compact
-		  end
-  		if frame.is_strike
+        bonus_rolls = [next_frame.roll_1, next_frame.roll_2]
+      else
+        bonus_rolls = [next_frame.roll_1, next_frame.roll_2, third_frame.roll_1].compact
+      end
+      if frame.is_strike
         strike_bonus = bonus_rolls[0] + bonus_rolls[1]
         @frame_scores[frame.frame_number] = 10 + strike_bonus
       elsif frame.is_spare
@@ -165,13 +165,13 @@ class BowlingGame
   end
 
   def bowling_score
-	  pins_felled_by_frame = Formatter.format_rolls(@total_pins_felled)
+    pins_felled_by_frame = Formatter.format_rolls(@total_pins_felled)
 
-	  score_calculator = ScoresCalculator.new
-	  score_by_frame = score_calculator.calculate_scores(pins_felled_by_frame)
+    score_calculator = ScoresCalculator.new
+    score_by_frame = score_calculator.calculate_scores(pins_felled_by_frame)
 
-	  score_sheet = ScoreSheet.new
-	  score_sheet.print_score(@name, pins_felled_by_frame, score_by_frame)
+    score_sheet = ScoreSheet.new
+    score_sheet.print_score(@name, pins_felled_by_frame, score_by_frame)
   end
 end
 
