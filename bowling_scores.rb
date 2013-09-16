@@ -66,14 +66,16 @@ class ScoresCalculator
 
   def initialize
     @frame_scores = {}
-    @cumulative_scores = {}
+    @score_by_frame = {}
   end
 
   def calculate_frame_score(frames_array)
   	frames_array.each_with_index do |frame, index|
   		next_frame = frames_array[index + 1]
   		third_frame = frames_array[index + 2]
-  		if third_frame == nil
+      if next_frame == nil
+        bonus_rolls = [0,0]
+      elsif third_frame == nil
   			bonus_rolls = [next_frame.roll_1, next_frame.roll_2]
   		else
 			  bonus_rolls = [next_frame.roll_1, next_frame.roll_2, third_frame.roll_1].compact
@@ -82,48 +84,28 @@ class ScoresCalculator
         strike_bonus = bonus_rolls[0] + bonus_rolls[1]
         @frame_scores[frame.frame_number] = 10 + strike_bonus
       elsif frame.is_spare
-        p frame
-        p bonus_rolls
         spare_bonus = bonus_rolls[0]
         @frame_scores[frame.frame_number] = 10 + spare_bonus
       else
-        @frame_scores[frame.frame_number] = frame.roll_1 + frame.roll_2
+        @frame_scores[frame.frame_number] = frame.roll_1 + frame.roll_2.to_i
       end
     end
     @frame_scores
   end
-
-  # def calculate_frame_score(pins_felled_by_frame)
-  #   pins_felled_by_frame.each_with_index do |frame, index|
-  #     if frame[0] == 10
-  #       bonus_array = pins_felled_by_frame[(index + 1)..-1].flatten.compact
-  #       strike_bonus = bonus_array[0] + bonus_array[1]
-  #       @frame_scores[index + 1] = 10 + strike_bonus
-  #     elsif frame[0].to_i + frame[1].to_i == 10
-  #       bonus_array = pins_felled_by_frame[(index + 1)..-1].flatten.compact
-  #       spare_bonus = bonus_array[0]
-  #       @frame_scores[index + 1] = 10 + spare_bonus.to_i
-  #     else
-  #       @frame_scores[index + 1] = frame[0].to_i + frame[1].to_i
-  #     end
-  #   end
-  #   @frame_scores
-  # end
 
   def calculate_score_by_frame(frame_scores)
-    @cumulative_scores = { 1 => @frame_scores[1] }
-    @frame_scores
+    @score_by_frame = { 1 => @frame_scores[1] }
     @frame_scores.each do |frame, score|
-      if @cumulative_scores[frame - 1] != nil
-        @cumulative_scores[frame] = score + @cumulative_scores[frame - 1]
+      if @score_by_frame[frame - 1] != nil
+        @score_by_frame[frame] = score + @score_by_frame[frame - 1]
       end
     end
-    @cumulative_scores
+    @score_by_frame
   end
 
-  def calculate_scores(pins_felled_by_frame)
-    @frame_scores = calculate_frame_score(pins_felled_by_frame)
-    @cumulative_scores = calculate_score_by_frame(@frame_scores)
+  def calculate_scores(frames_array)
+    @frame_scores = calculate_frame_score(frames_array)
+    @score_by_frame = calculate_score_by_frame(@frame_scores)
   end
 end
 
@@ -132,21 +114,28 @@ class ScoreSheet
   def initialize
   end
 
-  def format_rolls(pins_felled_by_frame)
+  def print_score(name, frames_array, score_by_frame)
+    frame_rolls = format_rolls(frames_array)
+    frame_rolls_score_hash = format_output(frame_rolls, score_by_frame)
+    puts "#{name}'s final score: #{frame_rolls_score_hash[10][2]}"
+    puts "Frame   Roll   Roll  Score"
+    frame_rolls_score_hash.each do |frame, data|
+      puts "#{frame}       #{data[0]}      #{data[1]}      #{data[2]}"
+    end
+  end
+
+  def format_rolls(frames_array)
     frame_rolls = {}
-    pins_felled_by_frame.each_with_index do |frame, index|
-      if frame[0] == 10
-        frame_rolls[index + 1] = ["X", " "]
-      elsif frame[0].to_i + frame[1].to_i == 10
-        frame_rolls[index + 1] = [frame[0].to_s, "/"]
-      elsif frame[0] == 0 || frame[1] == 0
-        frame.each_with_index do |roll, index|
-          frame[index] = "-" if roll == 0
-        end
-        frame_rolls[index + 1] = [frame[0].to_s, frame[1].to_s]
+    frames_array.each do |frame|
+      if frame.is_strike
+        frame_rolls[frame.frame_number] = ["X", " "]
+      elsif frame.is_spare
+        frame_rolls[frame.frame_number] = [frame.roll_1.to_s, "/"]
       else
-        frame_rolls[index + 1] = [frame[0].to_s, frame[1].to_s]
+        frame_rolls[frame.frame_number] = [frame.roll_1.to_s, frame.roll_2.to_s]
       end
+      frame_rolls[frame.frame_number][0] = "-" if frame_rolls[frame.frame_number][0] == "0"
+      frame_rolls[frame.frame_number][1] = "-" if frame_rolls[frame.frame_number][1] == "0"
     end
     frame_rolls
   end
@@ -166,16 +155,6 @@ class ScoreSheet
       frame_rolls_score_hash["*"][1] = (10 - frame_rolls_score_hash["*"][0].to_i).to_s
     end
     frame_rolls_score_hash
-  end
-
-  def print_score(name, pins_felled_by_frame, score_by_frame)
-    frame_rolls = format_rolls(pins_felled_by_frame)
-    frame_rolls_score_hash = format_output(frame_rolls, score_by_frame)
-    puts "#{name}'s final score: #{frame_rolls_score_hash[10][2]}"
-    puts "Frame   Roll   Roll  Score"
-    frame_rolls_score_hash.each do |frame, data|
-      puts "#{frame}       #{data[0]}      #{data[1]}      #{data[2]}"
-    end
   end
 end
 
